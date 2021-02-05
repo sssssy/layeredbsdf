@@ -1,0 +1,7 @@
+build/
+data/
+dist/
+.scon*/
+*.exr
+*.log
+dist/

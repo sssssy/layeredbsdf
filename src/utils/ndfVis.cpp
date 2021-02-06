@@ -65,7 +65,10 @@ public:
 	#define PI_DIVIDE_180 0.0174532922
 
 	//vis the NDF from a microfacet with evaluation
-	void visNDFMicrofacetEval(const BSDF *bsdf, Sampler * sampler, Vector3 wi, string outputPath, int outputRes, int side)
+	void visNDFMicrofacetEval(
+		const BSDF *bsdf, Sampler * sampler, Vector3 wi, 
+		string outputPath, int outputRes, int side, bool highspp
+	)
 	{
 
 		const int res = outputRes;
@@ -100,13 +103,17 @@ public:
 
 					/* Evaluate BSDF * cos(theta) */
 					Spectrum value(0.0f);
-					for (int spp =0; spp < 128; spp++)
+					if (highspp)
 					{
-						value += bsdf->eval(bRec);
+						for (int spp =0; spp < 128; spp++)
+						{
+							value += bsdf->eval(bRec);
+						}
+						value /= 128.0f;
 					}
-					value /= 128.0f;
-					//	Vector h = normalize(wo + wi);
-					//   Vector h = wo;
+					else{
+						value = bsdf->eval(bRec);
+					}
 					int jh = (h.y + 1) * res * 0.5;//(h.y + 1) * res * 0.5;
 					int ih = (h.x + 1) * res * 0.5;//(h.x + 1) * res * 0.5;
 
@@ -148,127 +155,17 @@ public:
 
 	}
 
-	void outputNDF(string output, int res, int *inds, int sampleCount, int validCount)
+	
+	void print(const Vector3 &dir)
 	{
-		int npix = res * res;
-		int *bins = new int[npix];
-		std::memset(bins, 0, npix * sizeof(int));
-		for (int i = 0; i < sampleCount; i++)
-		{
-			if (inds[i] != -1)
-				bins[inds[i]]++;
-		}
-
-		Array2D<Rgba> ndfData;
-		ndfData.resizeErase(res, res);
-
-		Float scale = Float(npix) / (4 * validCount);
-		for (int i = 0; i < npix; i++)
-		{
-			ndfData[i % res][i /res].r = scale * bins[i];
-			ndfData[i % res][i /res].g = scale * bins[i];
-			ndfData[i % res][i /res].b = scale * bins[i];
-			ndfData[i % res][i /res].a = 1.0f;
-		}
-
-		delete[] inds;
-		delete[] bins;
-
-		for (int i = 0; i < res; i++) //width
-		{
-			for (int j = 0; j < res; j++) //width
-			{
-				const Vector2 h = Vector2(2.0f * i / res - 1.0, 2.0f * j / res - 1.0);// 1.0 - 2.0f * j / res);
-				if (!is_valid(h))
-				{
-					ndfData[j][i].r = 0.5f;
-					ndfData[j][i].g = 0.5f;
-					ndfData[j][i].b = 0.5f;
-					ndfData[j][i].a = 1.0f;
-					continue;
-				}
-			}
-		}
-
-		cout << "Start ouput " << endl;
-		RgbaOutputFile file(output.c_str(), res, res, WRITE_RGBA); // 1
-		file.setFrameBuffer(&ndfData[0][0], 1, res); // 2
-		file.writePixels(res); // 3
-		cout << "Output Done " << endl;
+		cout << dir.x << "," << dir.y << "," << dir.z << endl;
 	}
 
-	void outputNDFValues(string output, int res, int *inds, float *values, int sampleCount, int validCount)
+	void print(const Point3 &dir)
 	{
-		int npix = res * res;
-		int *bins = new int[npix];
-		float *valueBin = new float[npix * 3];
-		std::memset(bins, 0, npix * sizeof(int));
-		std::memset(valueBin, 0, npix * sizeof(float) * 3);
-		for (int i = 0; i < sampleCount; i++)
-		{
-			if (inds[i] != -1)
-			{
-				valueBin[inds[i] * 3 + 0] += values[i * 3 + 0];
-				valueBin[inds[i] * 3 + 1] += values[i * 3 + 1];
-				valueBin[inds[i] * 3 + 2] += values[i * 3 + 2];
-				bins[inds[i]]++;
-			}
-		}
-
-		Array2D<Rgba> ndfData;
-		ndfData.resizeErase(res, res);
-
-		Float scale = 1;// Float(npix);// / (4 * validCount);
-		for (int i = 0; i < npix; i++)
-		{
-			if (bins[i] != 0)
-			{
-				ndfData[i % res][i / res].r = scale * valueBin[i * 3 + 0] / bins[i];// bins[i];
-				ndfData[i % res][i / res].g = scale * valueBin[i * 3 + 1] / bins[i];
-				ndfData[i % res][i / res].b = scale * valueBin[i * 3 + 2] / bins[i];
-				ndfData[i % res][i / res].a = 1.0f;
-			}
-		}
-
-		delete[] inds;
-		delete[] bins;
-		delete[] valueBin;
-		delete[] values;
-
-		for (int i = 0; i < res; i++) //width
-		{
-			for (int j = 0; j < res; j++) //width
-			{
-				const Vector2 h = Vector2(2.0f * i / res - 1.0, 2.0f * j / res - 1.0);// 1.0 - 2.0f * j / res);
-				if (!is_valid(h))
-				{
-					ndfData[j][i].r = 0.5f;
-					ndfData[j][i].g = 0.5f;
-					ndfData[j][i].b = 0.5f;
-					ndfData[j][i].a = 1.0f;
-					continue;
-				}
-			}
-		}
-
-		cout << "Start ouput " << endl;
-		RgbaOutputFile file(output.c_str(), res, res, WRITE_RGBA); // 1
-		file.setFrameBuffer(&ndfData[0][0], 1, res); // 2
-		file.writePixels(res); // 3
-		cout << "Output Done " << endl;
+		cout << dir.x << "," << dir.y << "," << dir.z << endl;
 	}
-
-
-		void print(const Vector3 &dir)
-		{
-			cout << dir.x << "," << dir.y << "," << dir.z << endl;
-		}
-
-
-		void print(const Point3 &dir)
-		{
-			cout << dir.x << "," << dir.y << "," << dir.z << endl;
-		}
+	
 	Vector degree2Vector(const float step, float theta, float phi)
 	{
 		float offset = 0.5;
@@ -282,17 +179,10 @@ public:
 		return Vector(sinTheta2* cos(dPhi), sinTheta2 * sin(dPhi), cosTheta2);
 	}
 
-
 	//vis NDF from microgeometry, normal map and microfacet
 	int run(int argc, char **argv) {
-		int optchar;
 		optind = 1;
-		char *end_ptr = NULL;
-		int type = 2;
-		int bounce = 1;
-		bool merge = false;
-	
-		type = std::stoi(argv[optind]);
+		int highspp = std::stoi(argv[optind]);
 		optind++;
 
 		std::string ndfFile = std::string(argv[optind]);
@@ -342,31 +232,16 @@ public:
 		Vector wi = Vector(sinTheta2* cos(dPhi), sinTheta2 * sin(dPhi), cosTheta2);
 		print(wi);
 
-		//Vector3 wi = Vector(0, 0, 1);// Vector(0, 0.6, 0.8);//
-		// degree2Vector(10, 30, 90); // 
-		if (type == 5)
+		BSDF *bsdf = scene->getShapes()[0]->getBSDF();
+		Sampler *sampler = scene->getSampler();
+
+		visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile, 512, 1, static_cast<bool>(highspp));
+		if (bsdf->hasComponent(BSDF::EGlossyTransmission))
 		{
-			//int side = std::stoi(argv[optind]);
-			//optind++;
-			BSDF *bsdf = scene->getShapes()[0]->getBSDF();
-			Sampler *sampler = scene->getSampler();
-
-
-			//visNDFMicrofacetEvalSphere(bsdf, sampler, wi, ndfFile, 1);
-			visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile, 512, 1);
-			if (bsdf->hasComponent(BSDF::EGlossyTransmission))
-			{
-				std::string ndfFile1 = std::string(argv[optind]);
-				optind++;
-				visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile1, 512, -1);
-			}
+			std::string ndfFile1 = std::string(argv[optind]);
+			optind++;
+			visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile1, 512, -1, static_cast<bool>(highspp));
 		}
-		else
-		{
-			cout << "Wrong type.\n";
-			return 0;
-		}
-
 
 		return 0;
 	}

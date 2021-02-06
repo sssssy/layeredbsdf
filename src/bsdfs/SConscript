@@ -31,6 +31,10 @@ plugins += env.SharedLibrary('thindielectric', ['thindielectric.cpp'])
 # add by GY
 plugins += env.SharedLibrary('multilayered', ['multilayered.cpp'])
 
+# [fjh] test
+plugins += env.SharedLibrary('roughconductorApprox', ['roughconductorApprox.cpp'])
+plugins += env.SharedLibrary('roughdielectric4Hemisphere', ['roughdielectric4Hemisphere.cpp'])
+
 # The Irawan-Marschner plugin uses a Boost::Spirit parser, which makes it
 # pretty heavy stuff to compile. Go easy on the compiler flags:
 irawanEnv = env.Clone()

@@ -67,7 +67,7 @@ public:
 	//vis the NDF from a microfacet with evaluation
 	void visNDFMicrofacetEval(
 		const BSDF *bsdf, Sampler * sampler, Vector3 wi, 
-		string outputPath, int outputRes, int side, bool highspp
+		string outputPath, int outputRes, int side, int spp
 	)
 	{
 
@@ -103,17 +103,11 @@ public:
 
 					/* Evaluate BSDF * cos(theta) */
 					Spectrum value(0.0f);
-					if (highspp)
+					for (int sample =0; sample < spp; sample++)
 					{
-						for (int spp =0; spp < 128; spp++)
-						{
-							value += bsdf->eval(bRec);
-						}
-						value /= 128.0f;
+						value += bsdf->eval(bRec);
 					}
-					else{
-						value = bsdf->eval(bRec);
-					}
+					value /= 1.0f*spp;
 					int jh = (h.y + 1) * res * 0.5;//(h.y + 1) * res * 0.5;
 					int ih = (h.x + 1) * res * 0.5;//(h.x + 1) * res * 0.5;
 
@@ -182,7 +176,7 @@ public:
 	//vis NDF from microgeometry, normal map and microfacet
 	int run(int argc, char **argv) {
 		optind = 1;
-		int highspp = std::stoi(argv[optind]);
+		int spp = std::stoi(argv[optind]);
 		optind++;
 
 		std::string ndfFile = std::string(argv[optind]);
@@ -235,12 +229,12 @@ public:
 		BSDF *bsdf = scene->getShapes()[0]->getBSDF();
 		Sampler *sampler = scene->getSampler();
 
-		visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile, 512, 1, static_cast<bool>(highspp));
+		visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile, 512, 1, spp);
 		if (bsdf->hasComponent(BSDF::EGlossyTransmission))
 		{
 			std::string ndfFile1 = std::string(argv[optind]);
 			optind++;
-			visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile1, 512, -1, static_cast<bool>(highspp));
+			visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile1, 512, -1, spp);
 		}
 
 		return 0;

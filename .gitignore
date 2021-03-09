@@ -5,3 +5,7 @@ dist/
 *.exr
 *.log
 dist/
+
+.sconsign.dblite
+config.log
+.sconf_temp

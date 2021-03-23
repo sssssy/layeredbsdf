@@ -394,8 +394,17 @@ MTS_NAMESPACE_BEGIN
 			list = NULL;
 		}
 #endif
+		
+		Spectrum fresnel_Schlick(const Vector& wi, Vector& H) const {
 
-		Spectrum fresnel_Schlick(const Vector3f& wi, const Vector3f& H) const {
+			float temp = 1.0f - dot(wi, H);
+			float temp_5 = pow(temp, 5);
+			Spectrum result = m_R0 + (Spectrum(1.0f) - m_R0) * temp_5;
+			return result;
+
+		}
+
+		Spectrum fresnel_Schlick(const Vector& wi, Normal& H) const {
 
 			float temp = 1.0f - dot(wi, H);
 			float temp_5 = pow(temp, 5);

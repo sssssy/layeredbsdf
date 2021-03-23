@@ -67,7 +67,7 @@ public:
 	//vis the NDF from a microfacet with evaluation
 	void visNDFMicrofacetEval(
 		const BSDF *bsdf, Sampler * sampler, Vector3 wi, 
-		string outputPath, int outputRes, int side, int spp
+		string outputPath, int outputRes, int hemisphere, int spp
 	)
 	{
 
@@ -96,8 +96,10 @@ public:
 				const Vector2 h2 = Vector2(2.0f * i / res - 1.0, 2.0f * j / res - 1.0);
 				if (is_valid(h2))
 				{
-					Vector h = Vector(h2.x, h2.y, sqrt(1.0f - h2.x * h2.x - h2.y * h2.y) * side);
+					Vector h = Vector(h2.x, h2.y, sqrt(1.0f - h2.x * h2.x - h2.y * h2.y));
 					Vector3 wo = h;// reflect(wi, h);
+					if (hemisphere == 1 || hemisphere == 3)
+						wo.z = -wo.z;
 					BSDFSamplingRecord bRec(its, wo, ERadiance);
 					bRec.sampler = sampler;
 
@@ -149,17 +151,6 @@ public:
 
 	}
 
-	
-	void print(const Vector3 &dir)
-	{
-		cout << dir.x << "," << dir.y << "," << dir.z << endl;
-	}
-
-	void print(const Point3 &dir)
-	{
-		cout << dir.x << "," << dir.y << "," << dir.z << endl;
-	}
-	
 	Vector degree2Vector(const float step, float theta, float phi)
 	{
 		float offset = 0.5;
@@ -219,17 +210,22 @@ public:
 		optind++;
 		float theta_i = std::stof(argv[optind]);
 		optind++;
+		int hemisphere = std::stoi(argv[optind]);
+		optind++;
 		float cosTheta2 = cos(theta_i);
 
 		float dPhi = M_PI / 2;
 		float sinTheta2 = sqrt(1 - cosTheta2 * cosTheta2);
 		Vector wi = Vector(sinTheta2* cos(dPhi), sinTheta2 * sin(dPhi), cosTheta2);
-		print(wi);
+		if (hemisphere >= 2)
+			wi.z = -wi.z;
+
+		SLog(EInfo, "wi: %s", wi.toString().c_str());
 
 		BSDF *bsdf = scene->getShapes()[0]->getBSDF();
 		Sampler *sampler = scene->getSampler();
 
-		visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile, 512, 1, spp);
+		visNDFMicrofacetEval(bsdf, sampler, wi, ndfFile, 512, hemisphere, spp);
 		if (bsdf->hasComponent(BSDF::EGlossyTransmission))
 		{
 			std::string ndfFile1 = std::string(argv[optind]);

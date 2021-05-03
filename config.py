@@ -1,34 +1,36 @@
-import os, sys
-
-BUILDDIR       = '#build/release'
-DISTDIR        = '#dist'
-CXX            = 'g++'
-CC             = 'gcc'
-# CXXFLAGS       = ['-std=gnu++11', '-O3', '-Wall', '-g', '-pipe', '-march=nocona', '-msse2', '-ftree-vectorize', '-mfpmath=sse', '-funsafe-math-optimizations', '-fno-rounding-math', '-fno-signaling-nans', '-fno-math-errno', '-fomit-frame-pointer', '-DMTS_DEBUG', '-DSINGLE_PRECISION', '-DSPECTRUM_SAMPLES=3', '-DMTS_SSE', '-DMTS_HAS_COHERENT_RT', '-fopenmp', '-fvisibility=hidden', '-mtls-dialect=gnu2']
-CXXFLAGS       = ['-std=gnu++11', '-O3', '-Wall', '-g', '-pipe', '-march=nocona', '-msse2', '-ftree-vectorize', '-mfpmath=sse', '-funsafe-math-optimizations', '-fno-rounding-math', '-fno-signaling-nans', '-fno-math-errno', '-fomit-frame-pointer', '-DMTS_DEBUG', '-DDOUBLE_PRECISION', '-DSPECTRUM_SAMPLES=3', '-fopenmp', '-fvisibility=hidden', '-mtls-dialect=gnu2']
-LINKFLAGS      = []
-SHLINKFLAGS    = ['-rdynamic', '-shared', '-fPIC', '-lstdc++']
-BASEINCLUDE    = ['#include']
-BASELIB        = ['dl', 'm', 'pthread', 'gomp']
-EIGENINCLUDE   = ['/usr/include/eigen3']
-OEXRINCLUDE    = ['/usr/include/OpenEXR']
-OEXRLIB        = ['Half', 'IlmImf', 'z']
-PNGLIB         = ['png']
-JPEGLIB        = ['jpeg']
-XERCESINCLUDE  = []
-XERCESLIB      = ['xerces-c']
-GLLIB          = ['GL', 'GLU', 'GLEWmx', 'Xxf86vm', 'X11']
-GLFLAGS        = ['-DGLEW_MX']
-BOOSTLIB       = ['boost_system', 'boost_filesystem', 'boost_thread']
-FFTWLIB        = ['fftw3_threads', 'fftw3']
-
-# The following runs a helper script to search for installed Python
-# packages that have a Boost Python library of matching version.
-# A Mitsuba binding library will be compiled for each such pair.
-# Alternatively, you could also specify the paths and libraries manually
-# using the variables PYTHON27INCLUDE, PYTHON27LIB, PYTHON27LIBDIR etc.
-
-import sys, os
-sys.path.append(os.path.abspath('../data/scons'))
-from detect_python import detect_python
-locals().update(detect_python())
+BUILDDIR        = '#build/release'
+DISTDIR         = '#dist'
+CXX             = 'cl'
+CC              = 'cl'
+# /O2=optimize for speed, global optimizations, intrinsic functions, favor fast code, frame pointer omission
+# /EHsc=C++ exceptions, /fp:fast=Enable reasonable FP optimizations, /GS-=No buffer security checks, /GL=whole program optimizations
+# To include debug information add '/Z7' to CXXFLAGS and '/DEBUG' to LINKFLAGS
+# EDIT: MSVC2017 bugs Mitsuba when using /O2 because of /Ob2 - replaced it with the full set and /Ob2 for /Ob1
+# EDIT: /Og is deprecated too
+CXXFLAGS        = ['/nologo', #'/Og',
+'/Oi', '/Ot', '/Oy', '/Ob1', #'/Ob2',
+'/Gs', '/GF', '/Gy', #'/O2',
+# '/fp:fast', '/D', 'WIN32', '/D', 'WIN64', '/W3', '/EHsc', '/GS-', '/GL', '/MD', '/D', 'MTS_DEBUG', '/D', 'SINGLE_PRECISION', '/D', 'SPECTRUM_SAMPLES=3', '/D', 'MTS_SSE', '/D', 'MTS_HAS_COHERENT_RT', '/D', '_CONSOLE', '/D', 'NDEBUG', '/D', 'OPENEXR_DLL', '/openmp']
+'/fp:fast', '/D', 'WIN32', '/D', 'WIN64', '/W3', '/EHsc', '/GS-', '/GL', '/MD', '/D', 'MTS_DEBUG', '/D', 'DOUBLE_PRECISION', '/D', 'SPECTRUM_SAMPLES=3', '/D', '_CONSOLE', '/D', 'NDEBUG', '/D', 'OPENEXR_DLL', '/openmp']
+SHCXXFLAGS      = CXXFLAGS
+TARGET_ARCH     = 'x86_64'
+MSVC_VERSION    = '15.0'
+LINKFLAGS       = ['/nologo', '/SUBSYSTEM:CONSOLE', '/MACHINE:X64', '/FIXED:NO', '/OPT:REF', '/OPT:ICF', '/LTCG', '/NODEFAULTLIB:LIBCMT', '/MANIFEST']
+BASEINCLUDE     = ['#include', '#dependencies/include']
+BASELIB         = ['msvcrt', 'ws2_32', 'Half', 'zlib']
+BASELIBDIR      = ['#dependencies/lib']
+OEXRINCLUDE     = ['#dependencies/include/openexr']
+OEXRLIB         = ['IlmImf', 'IlmThread', 'Iex', 'zlib']
+BOOSTLIB        = ['boost_system-vc141-mt-1_64', 'boost_filesystem-vc141-mt-1_64', 'boost_thread-vc141-mt-1_64']
+XERCESLIB       = ['xerces-c_3']
+PNGLIB          = ['libpng16']
+JPEGLIB         = ['jpeg']
+GLLIB           = ['opengl32', 'glu32', 'glew32mx', 'gdi32', 'user32']
+GLFLAGS         = ['/D', 'GLEW_MX']
+SHLIBPREFIX     = 'lib'
+SHLIBSUFFIX     = '.dll'
+LIBSUFFIX       = '.lib'
+PROGSUFFIX      = '.exe'
+QTINCLUDE       = ['#dependencies/include']
+QTDIR           = '#dependencies'
+FFTWLIB         = ['libfftw3-3']

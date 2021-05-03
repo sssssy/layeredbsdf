@@ -7,6 +7,10 @@ plugins += env.SharedLibrary('volpath', ['path/volpath.cpp'])
 plugins += env.SharedLibrary('volpath_simple', ['path/volpath_simple.cpp'])
 plugins += env.SharedLibrary('ptracer', ['ptracer/ptracer.cpp', 'ptracer/ptracer_proc.cpp'])
 
+## [fjh]
+plugins += env.SharedLibrary('path_separate', ['path/path_separate.cpp'])
+plugins += env.SharedLibrary('path_layered_separate', ['path/path_layered_separate.cpp'])
+
 # add by GY
 plugins += env.SharedLibrary('path_layered', ['path/path_layered.cpp'])
 

@@ -5,6 +5,7 @@ dist/
 *.exr
 *.log
 dist/
+dependencies/
 
 .sconsign.dblite
 config.log

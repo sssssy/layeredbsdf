@@ -1391,7 +1391,7 @@ public:
 				{
 					std::vector<PathInfo> path;
 					std::vector<Float> ratio, ratioPdf;
-					sampleVal = generatePath(_bRec, frames, mediums, -1, path, ratio, ratioPdf, false, false);
+					sampleVal = generatePath(_bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, false);
 				}
 				// sample pdf
 				{
@@ -1410,20 +1410,20 @@ public:
 				if (m_bidir) {
 					std::vector<PathInfo> path;
 					std::vector<Float> ratio, ratioPdf;
-					sampleVal = generatePath(_bRec, frames, mediums, -1, path, ratio, ratioPdf, false, true);
+					sampleVal = generatePath(_bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, true);
 
 					// backward sample
 					std::vector<PathInfo> path_R;
 					std::vector<Float> ratio_R, ratioPdf_R;
 					bRec_tmp.wi = bRec.wo;
-					generatePath(bRec_tmp, frames, mediums, -1, path_R, ratio_R, ratioPdf_R, true, true);
+					generatePath(bRec_tmp, frames, mediums, m_maxDepth, path_R, ratio_R, ratioPdf_R, true, true);
 
 					bidirEvaluation(bRec, frames, mediums, path, ratio, ratioPdf, path_R, ratio_R, ratioPdf_R, 1, evalVal, evalPdf_tmp);
 				}
 				else {
 					std::vector<PathInfo> path;
 					std::vector<Float> ratio, ratioPdf;
-					sampleVal = generatePath(_bRec, frames, mediums, -1, path, ratio, ratioPdf, false, false);
+					sampleVal = generatePath(_bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, false);
 					unidirEvaluation(bRec, frames, mediums, path, 1, evalVal, evalPdf_tmp);
 				}
 			}
@@ -1479,7 +1479,7 @@ public:
 		{
 			std::vector<PathInfo> path;
 			std::vector<Float> ratio, ratioPdf;
-			sampleVal = generatePath(_bRec, frames, mediums, -1, path, ratio, ratioPdf, false, false);
+			sampleVal = generatePath(_bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, false);
 		}
 
 		return sampleVal;
@@ -1501,7 +1501,7 @@ public:
 		{
 			std::vector<PathInfo> path;
 			std::vector<Float> ratio, ratioPdf;
-			sampleVal = generatePath(_bRec, frames, mediums, -1, path, ratio, ratioPdf, false, false);
+			sampleVal = generatePath(_bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, false);
 		}
 
 		{
@@ -1534,20 +1534,20 @@ public:
 			if (m_bidir) {
 				std::vector<PathInfo> path;
 				std::vector<Float> ratio, ratioPdf;
-				generatePath(bRec, frames, mediums, -1, path, ratio, ratioPdf, false, true);
+				generatePath(bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, true);
 
 				// backward sample
 				std::vector<PathInfo> path_R;
 				std::vector<Float> ratio_R, ratioPdf_R;
 				bRec_tmp.wi = _bRec.wo;
-				generatePath(bRec_tmp, frames, mediums, -1, path_R, ratio_R, ratioPdf_R, true, true);
+				generatePath(bRec_tmp, frames, mediums, m_maxDepth, path_R, ratio_R, ratioPdf_R, true, true);
 
 				bidirEvaluation(_bRec, frames, mediums, path, ratio, ratioPdf, path_R, ratio_R, ratioPdf_R, 1, evalVal, evalPdf_tmp);
 			}
 			else {
 				std::vector<PathInfo> path;
 				std::vector<Float> ratio, ratioPdf;
-				generatePath(bRec, frames, mediums, -1, path, ratio, ratioPdf, false, false);
+				generatePath(bRec, frames, mediums, m_maxDepth, path, ratio, ratioPdf, false, false);
 				unidirEvaluation(_bRec, frames, mediums, path, 1, evalVal, evalPdf_tmp);
 			}
 		}

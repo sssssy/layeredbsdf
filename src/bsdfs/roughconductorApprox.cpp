@@ -198,7 +198,8 @@ MTS_NAMESPACE_BEGIN
 			m_specularReflectance = new ConstantSpectrumTexture(
 				props.getSpectrum("specularReflectance", Spectrum(1.0f)));
 
-			m_R0 = props.getSpectrum("R0", Spectrum(1.0f));
+			m_R0 = new ConstantSpectrumTexture(
+				props.getSpectrum("R0", Spectrum(1.0f)));
 
 			MicrofacetDistribution distr(props);
 			m_type = distr.getType();
@@ -218,7 +219,7 @@ MTS_NAMESPACE_BEGIN
 			m_alphaU = static_cast<Texture*>(manager->getInstance(stream));
 			m_alphaV = static_cast<Texture*>(manager->getInstance(stream));
 			m_specularReflectance = static_cast<Texture*>(manager->getInstance(stream));
-			m_R0 = Spectrum(stream);
+			m_R0 = static_cast<Texture*>(manager->getInstance(stream));
 
 			configure();
 		}
@@ -231,7 +232,7 @@ MTS_NAMESPACE_BEGIN
 			manager->serialize(stream, m_alphaU.get());
 			manager->serialize(stream, m_alphaV.get());
 			manager->serialize(stream, m_specularReflectance.get());
-			m_R0.serialize(stream);
+			manager->serialize(stream, m_R0.get());
 		}
 
 		void configure() {
@@ -395,20 +396,20 @@ MTS_NAMESPACE_BEGIN
 		}
 #endif
 		
-		Spectrum fresnel_Schlick(const Vector& wi, Vector& H) const {
+		Spectrum fresnel_Schlick(const Vector& wi, Vector& H, const Intersection& its) const {
 
 			float temp = 1.0f - dot(wi, H);
 			float temp_5 = pow(temp, 5);
-			Spectrum result = m_R0 + (Spectrum(1.0f) - m_R0) * temp_5;
+			Spectrum result = m_R0->eval(its) + (Spectrum(1.0f) - m_R0->eval(its)) * temp_5;
 			return result;
 
 		}
 
-		Spectrum fresnel_Schlick(const Vector& wi, Normal& H) const {
+		Spectrum fresnel_Schlick(const Vector& wi, Normal& H, const Intersection& its) const {
 
 			float temp = 1.0f - dot(wi, H);
 			float temp_5 = pow(temp, 5);
-			Spectrum result = m_R0 + (Spectrum(1.0f) - m_R0) * temp_5;
+			Spectrum result = m_R0->eval(its) + (Spectrum(1.0f) - m_R0->eval(its)) * temp_5;
 			return result;
 
 		}
@@ -445,7 +446,7 @@ MTS_NAMESPACE_BEGIN
 				return Spectrum(0.0f);
 
 			/* Fresnel factor */
-			const Spectrum F = fresnel_Schlick(bRec.wi, H) *  //fresnelConductorExact(dot(bRec.wi, H), m_eta, m_k) *
+			const Spectrum F = fresnel_Schlick(bRec.wi, H, bRec.its) *  //fresnelConductorExact(dot(bRec.wi, H), m_eta, m_k) *
 				m_specularReflectance->eval(bRec.its);
 
 			/* Smith's shadow-masking function */
@@ -516,7 +517,7 @@ MTS_NAMESPACE_BEGIN
 			if (Frame::cosTheta(bRec.wo) <= 0)
 				return Spectrum(0.0f);
 
-			Spectrum F = fresnel_Schlick(bRec.wi, m) *//fresnelConductorExact(dot(bRec.wi, m),	m_eta, m_k) * 
+			Spectrum F = fresnel_Schlick(bRec.wi, m, bRec.its) *//fresnelConductorExact(dot(bRec.wi, m),	m_eta, m_k) * 
 				m_specularReflectance->eval(bRec.its);
 
 			Float weight;
@@ -562,7 +563,7 @@ MTS_NAMESPACE_BEGIN
 			if (Frame::cosTheta(bRec.wo) <= 0)
 				return Spectrum(0.0f);
 
-			Spectrum F = fresnel_Schlick(bRec.wi, m) *//fresnelConductorExact(dot(bRec.wi, m), m_eta, m_k) * 
+			Spectrum F = fresnel_Schlick(bRec.wi, m, bRec.its) *//fresnelConductorExact(dot(bRec.wi, m), m_eta, m_k) * 
 				m_specularReflectance->eval(bRec.its);
 
 			Float weight;
@@ -590,6 +591,8 @@ MTS_NAMESPACE_BEGIN
 					m_alphaV = static_cast<Texture*>(child);
 				else if (name == "specularReflectance")
 					m_specularReflectance = static_cast<Texture*>(child);
+				else if (name == "R0")
+					m_R0 = static_cast<Texture *>(child);
 				else
 					BSDF::addChild(name, child);
 			}
@@ -625,7 +628,7 @@ MTS_NAMESPACE_BEGIN
 		ref<Texture> m_specularReflectance;
 		ref<Texture> m_alphaU, m_alphaV;
 		bool m_sampleVisible;
-		Spectrum m_R0;
+		ref<Texture> m_R0;
 };
 
 /**
@@ -640,14 +643,15 @@ class RoughConductorApproxShader : public Shader {
 public:
 	RoughConductorApproxShader(Renderer* renderer, const Texture* specularReflectance,
 		const Texture* alphaU, const Texture* alphaV,
-		const Spectrum& _R0) : Shader(renderer, EBSDFShader),
-		m_specularReflectance(specularReflectance), m_alphaU(alphaU), m_alphaV(alphaV) {
+		const Texture* _R0) : Shader(renderer, EBSDFShader),
+		m_specularReflectance(specularReflectance), m_alphaU(alphaU), m_alphaV(alphaV), m_R0(_R0) {
 		m_specularReflectanceShader = renderer->registerShaderForResource(m_specularReflectance.get());
+		m_R0Shader = renderer->registerShaderForResource(m_R0.get());
 		m_alphaUShader = renderer->registerShaderForResource(m_alphaU.get());
 		m_alphaVShader = renderer->registerShaderForResource(m_alphaV.get());
 
 		/* Compute the reflectance at perpendicular incidence */
-		m_R0 = _R0;////fresnelConductorExact(1.0f, eta, k);
+		// m_R0 = _R0;////fresnelConductorExact(1.0f, eta, k);
 	}
 
 	bool isComplete() const {
@@ -664,6 +668,7 @@ public:
 
 	void cleanup(Renderer* renderer) {
 		renderer->unregisterShaderForResource(m_specularReflectance.get());
+		renderer->unregisterShaderForResource(m_R0.get());
 		renderer->unregisterShaderForResource(m_alphaU.get());
 		renderer->unregisterShaderForResource(m_alphaV.get());
 	}
@@ -672,9 +677,9 @@ public:
 		parameterIDs.push_back(program->getParameterID(evalName + "_R0", false));
 	}
 
-	void bind(GPUProgram* program, const std::vector<int>& parameterIDs, int& textureUnitOffset) const {
-		program->setParameter(parameterIDs[0], m_R0);
-	}
+	// void bind(GPUProgram* program, const std::vector<int>& parameterIDs, int& textureUnitOffset) const {
+	// 	program->setParameter(parameterIDs[0], m_R0);
+	// }
 
 	void generateCode(std::ostringstream& oss,
 		const std::string& evalName,
@@ -728,17 +733,18 @@ public:
 	MTS_DECLARE_CLASS()
 private:
 	ref<const Texture> m_specularReflectance;
+	ref<const Texture> m_R0;
 	ref<const Texture> m_alphaU;
 	ref<const Texture> m_alphaV;
 	ref<Shader> m_specularReflectanceShader;
 	ref<Shader> m_alphaUShader;
 	ref<Shader> m_alphaVShader;
-	Spectrum m_R0;
+	ref<Shader> m_R0Shader;
 };
 
 Shader* RoughConductorApprox::createShader(Renderer* renderer) const {
 	return new RoughConductorApproxShader(renderer,
-		m_specularReflectance.get(), m_alphaU.get(), m_alphaV.get(), m_R0);
+		m_specularReflectance.get(), m_alphaU.get(), m_alphaV.get(), m_R0.get());
 }
 
 MTS_IMPLEMENT_CLASS(RoughConductorApproxShader, false, Shader)

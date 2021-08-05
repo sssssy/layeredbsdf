@@ -94,7 +94,11 @@ public:
             m_samples2D[i] = new Point2[m_sampleCount];
         }
 
-        m_random = new Random();
+        int seed = props.getInteger("seed", -1);
+        if (seed != -1)
+            m_random = new Random((uint64_t)seed);
+        else
+            m_random = new Random();
     }
 
     LowDiscrepancySampler(Stream *stream, InstanceManager *manager)

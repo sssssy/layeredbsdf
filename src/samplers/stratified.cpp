@@ -87,7 +87,11 @@ public:
 
         m_invResolution = 1 / (Float) m_resolution;
         m_invResolutionSquare = 1 / (Float) m_sampleCount;
-        m_random = new Random();
+        int seed = props.getInteger("seed", -1);
+        if (seed != -1)
+            m_random = new Random((uint64_t)seed);
+        else
+            m_random = new Random();
     }
 
     StratifiedSampler(Stream *stream, InstanceManager *manager)
